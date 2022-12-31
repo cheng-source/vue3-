@@ -12,12 +12,14 @@
 <body>
 
     <script>
-        function effect() {
+        effect(() => {
+            console.log('track');
             document.body.innerHTML = obj.text;
-        }
-        effect();
-        obj.text = 'hello vue3';
-        console.log(obj);
+        });
+        setTimeout(() => {
+            obj.text = 'no';
+            console.log(obj);
+        }, 1000)
     </script>
 </body>
 
