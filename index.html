@@ -14,11 +14,12 @@
     <script>
         effect(() => {
             console.log('track');
-            document.body.innerHTML = obj.text;
+            document.body.innerHTML = obj.ok ? obj.text : 'not value';
         });
+
         setTimeout(() => {
-            obj.text = 'no';
-            console.log(obj);
+            obj.ok = false;
+            obj.text = 'aaa'
         }, 1000)
     </script>
 </body>
