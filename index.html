@@ -27,17 +27,23 @@
             }
         })
 
-        const sumRes = computed(() => obj.foo + obj.bar);
-        effect(() => {
-            console.log(sumRes.value);
-        })
-        effect(() => {
-            console.log(sumRes.value + 1);
-        })
+        // const sumRes = computed(() => obj.foo + obj.bar);
+        // effect(() => {
+        //     console.log(sumRes.value);
+        // })
+        // effect(() => {
+        //     console.log(sumRes.value + 1);
+        // })
 
-        setTimeout(() => {
-            obj.foo++;
-        }, 1000)
+        // setTimeout(() => {
+        //     obj.foo++;
+        // }, 1000)
+
+        watch(() => obj.foo, (newVal, oldVal) => {
+            console.log(newVal, oldVal);
+        })
+        obj.foo++;
+        obj.foo++;
     </script>
 </body>
 
