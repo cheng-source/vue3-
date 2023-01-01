@@ -1,14 +1,19 @@
 // 当读取对象属性时，把副作用函数放进桶里；当设置属性时，把副作用函数从桶里取出并执行
 let affectFunction = null;
+// effect栈
+let effectStact = [];
+
 // 注册副作用函数的函数
 function effect(fn) {
     function effectFn() {
         clearFn(effectFn);
         affectFunction = effectFn;
+        effectStact.push(effectFn);
         fn();
+        effectStact.pop();
+        affectFunction = effectStact[effectStact.length - 1];
     }
     effectFn.relySet = [];
-    console.log(fn);
     effectFn(fn);
 }
 
@@ -50,7 +55,7 @@ function trigger(target, key) {
     // relySet && relySet.forEach((fn) => fn());
 }
 
-const data = { ok: true, text: 'hello world' };
+const data = { foo: true, bar: true };
 const obj = new Proxy(data, {
     get(target, key) {
         track(target, key);

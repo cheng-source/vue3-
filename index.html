@@ -12,14 +12,18 @@
 <body>
 
     <script>
-        effect(() => {
-            console.log('track');
-            document.body.innerHTML = obj.ok ? obj.text : 'not value';
-        });
+        let temp1, temp2;
+        effect(function effectFn1() {
+            console.log('effectFn1执行');
+            effect(function effectFn2() {
+                console.log('effectFn2执行');
+                temp2 = obj.bar
+            })
+            temp1 = obj.foo
+        })
 
         setTimeout(() => {
-            obj.ok = false;
-            obj.text = 'aaa'
+            obj.foo = false;
         }, 1000)
     </script>
 </body>
