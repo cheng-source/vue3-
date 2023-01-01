@@ -4,7 +4,7 @@ let affectFunction = null;
 let effectStact = [];
 
 // 注册副作用函数的函数
-function effect(fn) {
+function effect(fn, option = {}) {
     function effectFn() {
         clearFn(effectFn);
         affectFunction = effectFn;
@@ -14,6 +14,7 @@ function effect(fn) {
         affectFunction = effectStact[effectStact.length - 1];
     }
     effectFn.relySet = [];
+    effectFn.option = option;
     effectFn(fn);
 }
 
@@ -57,7 +58,13 @@ function trigger(target, key) {
         }
     })
 
-    effectToRun.forEach(effectFn => effectFn());
+    effectToRun.forEach(effectFn => {
+        if (effectFn.option.scheduler) {
+            effectFn.option.scheduler(effectFn)
+        } else {
+            effectFn();
+        }
+    });
     // relySet && relySet.forEach((fn) => fn());
 }
 
