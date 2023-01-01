@@ -57,7 +57,7 @@ function trigger(target, key) {
     }
     let relySet = keyMap.get(key);
     const effectToRun = new Set();
-    relySet.forEach(effectFn => {
+    relySet && relySet.forEach(effectFn => {
         if (effectFn !== affectFunction) {
             effectToRun.add(effectFn);
         }
@@ -73,7 +73,7 @@ function trigger(target, key) {
     // relySet && relySet.forEach((fn) => fn());
 }
 
-
+// 实现计算属性
 function computed(getter) {
     let value;
     let dirty = true;
@@ -95,4 +95,37 @@ function computed(getter) {
         }
     }
     return obj;
+}
+
+// 实现watch
+function watch(source, cb) {
+    let getter;
+    let oldVal, newVal;
+    if (typeof source === 'function') {
+        getter = source;
+    } else {
+        getter = () => traverse(source);
+    }
+
+    const effectFn = effect(() => getter(), {
+        lazy: true,
+        scheduler() {
+            newVal = effectFn();
+            cb(newVal, oldVal);
+            oldVal = newVal;
+        }
+    });
+    oldVal = effectFn();
+}
+
+// 遍历对象的属性
+function traverse(source, seen = new Set()) {
+    if (typeof source !== 'object' || source === null || seen.has(source)) {
+        return
+    }
+    seen.add(source);
+    for (const k in source) {
+
+        traverse(source[k], seen);
+    }
 }
