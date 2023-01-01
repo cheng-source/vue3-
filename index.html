@@ -14,8 +14,14 @@
     <script>
         let temp1, temp2;
         effect(function effectFn1() {
-            obj.foo++;
+            console.log(obj.foo);
+        }, {
+            scheduler(fn) {
+                setTimeout(fn);
+            }
         })
+        obj.foo++;
+        console.log('结束了');
 
         // setTimeout(() => {
         //     obj.foo = false;
