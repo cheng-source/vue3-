@@ -12,20 +12,32 @@
 <body>
 
     <script>
-        let temp1, temp2;
-        effect(function effectFn1() {
-            console.log(obj.foo);
-        }, {
-            scheduler(fn) {
-                setTimeout(fn);
+        const data = {
+            foo: 1,
+            bar: 2
+        };
+        const obj = new Proxy(data, {
+            get(target, key) {
+                track(target, key);
+                return target[key];
+            },
+            set(target, key, value) {
+                target[key] = value;
+                trigger(target, key);
             }
         })
-        obj.foo++;
-        console.log('结束了');
 
-        // setTimeout(() => {
-        //     obj.foo = false;
-        // }, 1000)
+        const sumRes = computed(() => obj.foo + obj.bar);
+        effect(() => {
+            console.log(sumRes.value);
+        })
+        effect(() => {
+            console.log(sumRes.value + 1);
+        })
+
+        setTimeout(() => {
+            obj.foo++;
+        }, 1000)
     </script>
 </body>
 
