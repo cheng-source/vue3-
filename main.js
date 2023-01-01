@@ -50,12 +50,18 @@ function trigger(target, key) {
         return
     }
     let relySet = keyMap.get(key);
-    const effectToRun = new Set(relySet);
+    const effectToRun = new Set();
+    relySet.forEach(effectFn => {
+        if (effectFn !== affectFunction) {
+            effectToRun.add(effectFn);
+        }
+    })
+
     effectToRun.forEach(effectFn => effectFn());
     // relySet && relySet.forEach((fn) => fn());
 }
 
-const data = { foo: true, bar: true };
+const data = { foo: 1, bar: true };
 const obj = new Proxy(data, {
     get(target, key) {
         track(target, key);

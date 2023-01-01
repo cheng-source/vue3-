@@ -14,17 +14,12 @@
     <script>
         let temp1, temp2;
         effect(function effectFn1() {
-            console.log('effectFn1执行');
-            effect(function effectFn2() {
-                console.log('effectFn2执行');
-                temp2 = obj.bar
-            })
-            temp1 = obj.foo
+            obj.foo++;
         })
 
-        setTimeout(() => {
-            obj.foo = false;
-        }, 1000)
+        // setTimeout(() => {
+        //     obj.foo = false;
+        // }, 1000)
     </script>
 </body>
 
