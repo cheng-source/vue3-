@@ -9,13 +9,18 @@ function effect(fn, option = {}) {
         clearFn(effectFn);
         affectFunction = effectFn;
         effectStact.push(effectFn);
-        fn();
+        const result = fn();
         effectStact.pop();
         affectFunction = effectStact[effectStact.length - 1];
+        return result;
     }
     effectFn.relySet = [];
     effectFn.option = option;
-    effectFn(fn);
+    if (!option.lazy) {
+        effectFn();
+    }
+    return effectFn;
+
 }
 
 function clearFn(effectFn) {
@@ -68,14 +73,26 @@ function trigger(target, key) {
     // relySet && relySet.forEach((fn) => fn());
 }
 
-const data = { foo: 1, bar: true };
-const obj = new Proxy(data, {
-    get(target, key) {
-        track(target, key);
-        return target[key];
-    },
-    set(target, key, value) {
-        target[key] = value;
-        trigger(target, key);
+
+function computed(getter) {
+    let value;
+    let dirty = true;
+    const effectFn = effect(getter, {
+        lazy: true,
+        scheduler() {
+            dirty = true;
+            trigger(obj, 'value');
+        }
+    })
+    let obj = {
+        get value() {
+            if (dirty) {
+                value = effectFn();
+                dirty = false;
+            }
+            track(obj, 'value')
+            return value;
+        }
     }
-})
+    return obj;
+}
