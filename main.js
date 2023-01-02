@@ -101,14 +101,22 @@ function computed(getter) {
 function watch(source, cb, option = {}) {
     let getter;
     let oldVal, newVal;
+    let cleanup; // 用来存储用户过期的回调
     if (typeof source === 'function') {
         getter = source;
     } else {
         getter = () => traverse(source);
     }
+
+    function onInvalidate(fn) {
+        cleanup = fn;
+    }
     const job = () => {
         newVal = effectFn();
-        cb(newVal, oldVal);
+        if (cleanup) {
+            cleanup();
+        }
+        cb(newVal, oldVal, onInvalidate);
         oldVal = newVal;
     }
 
