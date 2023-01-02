@@ -41,6 +41,8 @@
 
         watch(() => obj.foo, (newVal, oldVal) => {
             console.log(newVal, oldVal);
+        }, {
+            immediate: true
         })
         obj.foo++;
         obj.foo++;

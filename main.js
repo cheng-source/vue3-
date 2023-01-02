@@ -98,7 +98,7 @@ function computed(getter) {
 }
 
 // 实现watch
-function watch(source, cb) {
+function watch(source, cb, option = {}) {
     let getter;
     let oldVal, newVal;
     if (typeof source === 'function') {
@@ -106,16 +106,29 @@ function watch(source, cb) {
     } else {
         getter = () => traverse(source);
     }
+    const job = () => {
+        newVal = effectFn();
+        cb(newVal, oldVal);
+        oldVal = newVal;
+    }
 
     const effectFn = effect(() => getter(), {
         lazy: true,
         scheduler() {
-            newVal = effectFn();
-            cb(newVal, oldVal);
-            oldVal = newVal;
+            if (option.flush === 'post') {
+                const p = Promise.resolve();
+                p.then(job());
+            } else {
+                job()
+            }
         }
     });
-    oldVal = effectFn();
+    if (option.immediate === true) {
+        job();
+    } else {
+        oldVal = effectFn();
+    }
+
 }
 
 // 遍历对象的属性
