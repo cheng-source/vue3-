@@ -50,7 +50,8 @@ function track(target, key) {
 }
 
 // 触发函数
-function trigger(target, key) {
+// type：判断操作是属于修改属性值还是增加属性、删除属性等
+function trigger(target, key, type) {
     let keyMap = bucket.get(target);
     if (!keyMap) {
         return
@@ -62,6 +63,15 @@ function trigger(target, key) {
             effectToRun.add(effectFn);
         }
     })
+    if (type === 'ADD' || type === 'DELETE') {
+        const iterateSet = keyMap.get(ITERATE_KEY);
+        iterateSet && iterateSet.forEach(effectFn => {
+            if (effectFn !== affectFunction) {
+                effectToRun.add(effectFn);
+            }
+        })
+    }
+
 
     effectToRun.forEach(effectFn => {
         if (effectFn.option.scheduler) {
