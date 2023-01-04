@@ -14,18 +14,60 @@
     <script>
         const data = {
             foo: 1,
-            bar: 2
+            // bar: 2
+            get bar() {
+                return this.foo
+            }
         };
+        const ITERATE_KEY = Symbol()
         const obj = new Proxy(data, {
-            get(target, key) {
+            get(target, key, receiver) {
                 track(target, key);
-                return target[key];
+                return Reflect.get(target, key, receiver);
             },
-            set(target, key, value) {
-                target[key] = value;
-                trigger(target, key);
+            set(target, key, value, receiver) {
+                // 如果属性不存在，则说明是在添加新属性，否则是设置已有属性
+                const type = Object.prototype.hasOwnProperty.call(target, key) ? 'SET' : 'ADD'
+                const res = Reflect.set(target, key, value, receiver)
+                    // target[key] = value;
+                trigger(target, key, type);
+                return res
+            },
+            // 拦截in操作符
+            has(target, key) {
+                track(target, key);
+                return Reflect.has(target, key);
+            },
+            // 拦截for...in操作
+            ownKeys(target) {
+                track(target, ITERATE_KEY)
+                return Reflect.ownKeys(target)
+            },
+            // 拦截删除属性操作
+            deleteProperty(target, key) {
+                // 判断对象是否有key属性，
+                const hadKey = Object.prototype.hasOwnProperty.call(target, key);
+                // 删除对象操作，对象属性不存在时进行该操作返回true
+                const res = Reflect.deleteProperty(target, key);
+                if (hadKey && res) {
+                    // 删除属性时会触发for...in操作
+                    trigger(target, key, 'DELETE')
+                }
             }
         })
+
+        effect(() => {
+            for (const key in obj) {
+                console.log(key);
+            }
+        })
+        delete obj.bar;
+        // const p = new Proxy(data, {});
+
+        // console.log(p.foo);
+        // delete p.foo
+        // console.log(data.foo);
+
 
         // const sumRes = computed(() => obj.foo + obj.bar);
         // effect(() => {
@@ -39,13 +81,13 @@
         //     obj.foo++;
         // }, 1000)
 
-        watch(() => obj.foo, (newVal, oldVal) => {
-            console.log(newVal, oldVal);
-        }, {
-            immediate: true
-        })
-        obj.foo++;
-        obj.foo++;
+        // watch(() => obj.foo, (newVal, oldVal) => {
+        //     console.log(newVal, oldVal);
+        // }, {
+        //     immediate: true
+        // })
+        // obj.foo++;
+        // obj.foo++;
     </script>
 </body>
 
