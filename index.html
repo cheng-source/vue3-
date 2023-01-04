@@ -12,22 +12,50 @@
 <body>
 
     <script>
+        // const obj = {};
+        // const proto = {
+        //     bar: 1
+        // };
+        // const child = reactive(obj);
+        // const parent = reactive(proto);
+        // Object.setPrototypeOf(child, parent);
+        // effect(() => {
+        //     console.log(child.bar);
+        // });
+        // child.bar = 2;
+        // console.log(obj, proto);
+
         const data = {
-            foo: NaN,
-            // bar: 2
-            get bar() {
-                return this.foo
+            foo: {
+                bar: 1
             }
         };
-        const ITERATE_KEY = Symbol()
-
-        const obj = reactive(data);
+        const obj = shallowReactive(data);
         effect(() => {
-            console.log(obj.foo);
+            console.log(obj.foo.bar);
         });
-        setTimeout(() => {
-            obj.foo = NaN;
-        }, 1000)
+        obj.foo = {
+            bar: 2
+        };
+
+        obj.foo.bar = 3;
+
+        // const data = {
+        //     foo: NaN,
+        //     // bar: 2
+        //     get bar() {
+        //         return this.foo
+        //     }
+        // };
+
+
+        // const obj = reactive(data);
+        // effect(() => {
+        //     console.log(obj.foo);
+        // });
+        // setTimeout(() => {
+        //     obj.foo = 2;
+        // }, 1000)
 
         // const p = new Proxy(data, {});
 

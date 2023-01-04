@@ -3,6 +3,7 @@ let affectFunction = null;
 // effect栈
 let effectStact = [];
 
+
 // 注册副作用函数的函数
 function effect(fn, option = {}) {
     function effectFn() {
@@ -49,6 +50,8 @@ function track(target, key) {
     affectFunction.relySet.push(relySet);
 }
 
+
+const ITERATE_KEY = Symbol();
 // 触发函数
 // type：判断操作是属于修改属性值还是增加属性、删除属性等
 function trigger(target, key, type) {
@@ -146,7 +149,6 @@ function watch(source, cb, option = {}) {
     } else {
         oldVal = effectFn();
     }
-
 }
 
 // 遍历对象的属性
@@ -161,12 +163,25 @@ function traverse(source, seen = new Set()) {
     }
 }
 
-// 响应函数
-function reactive(obj) {
-    return new Proxy(data, {
+// 封装 createReactive 函数，接收一个参数 isShallow，代表是否为浅响应，默认为 false，即非浅响应
+
+function createReactive(obj, isShallow = false) {
+    return new Proxy(obj, {
         get(target, key, receiver) {
+            // 代理对象可以通过raw属性返回被代理的对象
+            if (key === 'raw') {
+                return target;
+            }
             track(target, key);
-            return Reflect.get(target, key, receiver);
+            const res = Reflect.get(target, key, receiver);
+            if (isShallow) {
+                return res;
+            }
+            if (typeof res === 'object' && res !== null) {
+                return reactive(res);
+            }
+            return res;
+
         },
         set(target, key, newValue, receiver) {
             const oldValue = target[key];
@@ -174,9 +189,12 @@ function reactive(obj) {
             const type = Object.prototype.hasOwnProperty.call(target, key) ? 'SET' : 'ADD';
             // target[key] = newValue;
             const res = Reflect.set(target, key, newValue, receiver);
-            // 比较新值与旧值，只有当它们不全等，并且不都是 NaN 的时候才触发响应
-            if (oldValue !== newValue && (oldValue === oldValue || newValue === newValue)) {
-                trigger(target, key, type);
+            // target === receiver.raw 说明 receiver 就是 target 的代理对象
+            if (target === receiver.raw) {
+                // 比较新值与旧值，只有当它们不全等，并且不都是 NaN 的时候才触发响应
+                if (oldValue !== newValue && (oldValue === oldValue || newValue === newValue)) {
+                    trigger(target, key, type);
+                }
             }
 
             return res
@@ -203,4 +221,13 @@ function reactive(obj) {
             }
         }
     })
+}
+
+// 响应函数
+function reactive(obj) {
+    return createReactive(obj);
+}
+
+function shallowReactive(obj) {
+    return createReactive(obj, true);
 }
