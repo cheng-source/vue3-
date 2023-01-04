@@ -160,3 +160,47 @@ function traverse(source, seen = new Set()) {
         traverse(source[k], seen);
     }
 }
+
+// 响应函数
+function reactive(obj) {
+    return new Proxy(data, {
+        get(target, key, receiver) {
+            track(target, key);
+            return Reflect.get(target, key, receiver);
+        },
+        set(target, key, newValue, receiver) {
+            const oldValue = target[key];
+            // 如果属性不存在，则说明是在添加新属性，否则是设置已有属性
+            const type = Object.prototype.hasOwnProperty.call(target, key) ? 'SET' : 'ADD';
+            // target[key] = newValue;
+            const res = Reflect.set(target, key, newValue, receiver);
+            // 比较新值与旧值，只有当它们不全等，并且不都是 NaN 的时候才触发响应
+            if (oldValue !== newValue && (oldValue === oldValue || newValue === newValue)) {
+                trigger(target, key, type);
+            }
+
+            return res
+        },
+        // 拦截in操作符
+        has(target, key) {
+            track(target, key);
+            return Reflect.has(target, key);
+        },
+        // 拦截for...in操作
+        ownKeys(target) {
+            track(target, ITERATE_KEY)
+            return Reflect.ownKeys(target)
+        },
+        // 拦截删除属性操作
+        deleteProperty(target, key) {
+            // 判断对象是否有key属性，
+            const hadKey = Object.prototype.hasOwnProperty.call(target, key);
+            // 删除对象操作，对象属性不存在时进行该操作返回true
+            const res = Reflect.deleteProperty(target, key);
+            if (hadKey && res) {
+                // 删除属性时会触发for...in操作
+                trigger(target, key, 'DELETE')
+            }
+        }
+    })
+}
