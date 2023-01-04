@@ -165,25 +165,33 @@ function traverse(source, seen = new Set()) {
 
 // 封装 createReactive 函数，接收一个参数 isShallow，代表是否为浅响应，默认为 false，即非浅响应
 
-function createReactive(obj, isShallow = false) {
+function createReactive(obj, isShallow = false, isReadonly = false) {
     return new Proxy(obj, {
         get(target, key, receiver) {
             // 代理对象可以通过raw属性返回被代理的对象
             if (key === 'raw') {
                 return target;
             }
-            track(target, key);
+            if (!isReadonly) {
+                track(target, key);
+            }
+
             const res = Reflect.get(target, key, receiver);
             if (isShallow) {
                 return res;
             }
             if (typeof res === 'object' && res !== null) {
-                return reactive(res);
+                return isReadonly ? readonly(res) : reactive(res);
             }
             return res;
 
         },
         set(target, key, newValue, receiver) {
+            if (isReadonly) {
+                console.warn(`属性${key}是只读的`);
+                return true;
+            }
+
             const oldValue = target[key];
             // 如果属性不存在，则说明是在添加新属性，否则是设置已有属性
             const type = Object.prototype.hasOwnProperty.call(target, key) ? 'SET' : 'ADD';
@@ -211,6 +219,11 @@ function createReactive(obj, isShallow = false) {
         },
         // 拦截删除属性操作
         deleteProperty(target, key) {
+            if (isReadonly) {
+                console.warn(`属性${key}是只读的`);
+                return true;
+            }
+
             // 判断对象是否有key属性，
             const hadKey = Object.prototype.hasOwnProperty.call(target, key);
             // 删除对象操作，对象属性不存在时进行该操作返回true
@@ -230,4 +243,12 @@ function reactive(obj) {
 
 function shallowReactive(obj) {
     return createReactive(obj, true);
+}
+
+function readonly(obj) {
+    return createReactive(obj, false, true)
+}
+
+function shallowReadonly(obj) {
+    return createReactive(obj, true, true)
 }

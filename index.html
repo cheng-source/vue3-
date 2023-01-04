@@ -25,20 +25,30 @@
         // child.bar = 2;
         // console.log(obj, proto);
 
-        const data = {
+        // const data = {
+        //     foo: {
+        //         bar: 1
+        //     }
+        // };
+        // const obj = shallowReactive(data);
+        // effect(() => {
+        //     console.log(obj.foo.bar);
+        // });
+        // obj.foo = {
+        //     bar: 2
+        // };
+
+        const obj = shallowReadonly({
             foo: {
                 bar: 1
             }
-        };
-        const obj = shallowReactive(data);
-        effect(() => {
-            console.log(obj.foo.bar);
         });
+
         obj.foo = {
             bar: 2
         };
+        console.log(obj);
 
-        obj.foo.bar = 3;
 
         // const data = {
         //     foo: NaN,
