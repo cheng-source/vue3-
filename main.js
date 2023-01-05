@@ -54,11 +54,13 @@ function track(target, key) {
 const ITERATE_KEY = Symbol();
 // 触发函数
 // type：判断操作是属于修改属性值还是增加属性、删除属性等
-function trigger(target, key, type) {
+function trigger(target, key, type, newVal) {
     let keyMap = bucket.get(target);
     if (!keyMap) {
         return
     }
+
+
     let relySet = keyMap.get(key);
     const effectToRun = new Set();
     relySet && relySet.forEach(effectFn => {
@@ -66,6 +68,27 @@ function trigger(target, key, type) {
             effectToRun.add(effectFn);
         }
     })
+    if (type === 'ADD' && Array.isArray(target)) {
+        const lengthEffects = keyMap.get('length');
+        lengthEffects && lengthEffects.forEach(effectFn => {
+            if (effectFn != affectFunction) {
+                effectToRun.add(effectFn);
+            }
+        })
+    }
+
+    if (Array.isArray(target) && key === 'length') {
+        keyMap.forEach((effects, key) => {
+            if (key >= newVal) {
+                effects.forEach(effectFn => {
+                    if (effectFn !== affectFunction) {
+                        effectToRun.add(effectFn);
+                    }
+                })
+            }
+        })
+    }
+
     if (type === 'ADD' || type === 'DELETE') {
         const iterateSet = keyMap.get(ITERATE_KEY);
         iterateSet && iterateSet.forEach(effectFn => {
@@ -193,15 +216,16 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
             }
 
             const oldValue = target[key];
+            // 数组：如果给数组赋值的位置大于数组本身的大小，则会影响数组的length属性；  
             // 如果属性不存在，则说明是在添加新属性，否则是设置已有属性
-            const type = Object.prototype.hasOwnProperty.call(target, key) ? 'SET' : 'ADD';
+            const type = Array.isArray(target) ? Number(key) < target.length ? 'SET' : 'ADD' : Object.prototype.hasOwnProperty.call(target, key) ? 'SET' : 'ADD';
             // target[key] = newValue;
             const res = Reflect.set(target, key, newValue, receiver);
             // target === receiver.raw 说明 receiver 就是 target 的代理对象
             if (target === receiver.raw) {
                 // 比较新值与旧值，只有当它们不全等，并且不都是 NaN 的时候才触发响应
                 if (oldValue !== newValue && (oldValue === oldValue || newValue === newValue)) {
-                    trigger(target, key, type);
+                    trigger(target, key, type, newValue);
                 }
             }
 
