@@ -38,16 +38,30 @@
         //     bar: 2
         // };
 
-        const obj = shallowReadonly({
-            foo: {
-                bar: 1
-            }
-        });
+        // const obj = shallowReadonly({
+        //     foo: {
+        //         bar: 1
+        //     }
+        // });
 
-        obj.foo = {
-            bar: 2
-        };
-        console.log(obj);
+        // obj.foo = {
+        //     bar: 2
+        // };
+        // console.log(obj);
+
+        // const arr = reactive(['foo']);
+        // effect(() => {
+        //     console.log(arr.length);
+        // })
+        // arr[1] = 'bar'
+
+        // const arr = reactive(['foo']);
+        // effect(() => {
+        //     console.log(arr[0]);
+        // })
+        // arr.length = 0;
+
+
 
 
         // const data = {
