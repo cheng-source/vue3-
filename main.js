@@ -3,6 +3,33 @@ let affectFunction = null;
 // effect栈
 let effectStact = [];
 
+// 一个标记变量，代表是否进行追踪。默认值为 true，即允许追踪
+let shouldTrack = true;
+
+// 重写数组方法
+const arrayMethods = {};
+// 重写数组方法
+['includes', 'indexOf', 'lastIndexOf'].forEach(method => {
+    const originMethod = Array.prototype[method];
+    arrayMethods[method] = function(...args) {
+        let res = originMethod.apply(this, args);
+        if (res === false || res === -1) {
+            res = originMethod.apply(this.raw, args);
+        }
+        return res;
+    }
+});
+
+// 重写数组方法
+['push', 'pop', 'shift', 'unshift', 'splice '].forEach(method => {
+    const originMethod = Array.prototype[method];
+    arrayMethods[method] = function(...args) {
+        shouldTrack = false;
+        let res = originMethod.apply(this, args);
+        shouldTrack = true;
+        return res;
+    }
+})
 
 // 注册副作用函数的函数
 function effect(fn, option = {}) {
@@ -35,8 +62,8 @@ const bucket = new WeakMap(); //当代理的对象不要时，该对象不会再
 
 // 追踪函数
 function track(target, key) {
-    if (!affectFunction) {
-        return target[key];
+    if (!affectFunction || !shouldTrack) {
+        return;
     }
     let keyMap = bucket.get(target);
     if (!keyMap) {
@@ -195,8 +222,12 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
             if (key === 'raw') {
                 return target;
             }
-            if (!isReadonly) {
+            if (!isReadonly || typeof key !== 'symbol') {
                 track(target, key);
+            }
+
+            if (Array.isArray(target) && arrayMethods.hasOwnProperty(key)) {
+                return Reflect.get(arrayMethods, key, receiver);
             }
 
             const res = Reflect.get(target, key, receiver);
@@ -238,7 +269,7 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
         },
         // 拦截for...in操作
         ownKeys(target) {
-            track(target, ITERATE_KEY)
+            track(target, Array.isArray(target) ? 'length' : ITERATE_KEY)
             return Reflect.ownKeys(target)
         },
         // 拦截删除属性操作
@@ -260,9 +291,21 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
     })
 }
 
+
+
+
+
+const reactiveMap = new Map();
 // 响应函数
 function reactive(obj) {
-    return createReactive(obj);
+    const existReactive = reactiveMap.get(obj);
+    if (existReactive) {
+        return existReactive;
+    }
+    const proxy = createReactive(obj);
+    reactiveMap.set(obj, proxy);
+    return proxy;
+    // return createReactive(obj);
 }
 
 function shallowReactive(obj) {

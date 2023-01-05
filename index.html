@@ -106,7 +106,27 @@
         //     immediate: true
         // })
         // obj.foo++;
-        // obj.foo++;
+        // obj.foo++;、
+
+        // const arr = reactive(['foo']);
+        // effect(() => {
+        //     for (const key in arr) {
+        //         console.log(key);
+        //     }
+        // });
+        // arr[1] = 'bar';
+        // arr.length = 0
+        // const obj = {};
+        // let arr = reactive([obj]);
+        // console.log(arr.includes(obj));
+
+        const arr = reactive([]);
+        effect(() => {
+            arr.push(1);
+        });
+        effect(() => {
+            arr.push(2);
+        });
     </script>
 </body>
 
