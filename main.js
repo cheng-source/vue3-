@@ -3,6 +3,8 @@ let affectFunction = null;
 // effect栈
 let effectStact = [];
 
+// 一个标记变量，代表是否进行追踪。默认值为 true，即允许追踪
+let shouldTrack = true;
 
 // 重写数组方法
 const arrayMethods = {};
@@ -16,7 +18,17 @@ const arrayMethods = {};
         }
         return res;
     }
+});
 
+// 重写数组方法
+['push', 'pop', 'shift', 'unshift', 'splice '].forEach(method => {
+    const originMethod = Array.prototype[method];
+    arrayMethods[method] = function(...args) {
+        shouldTrack = false;
+        let res = originMethod.apply(this, args);
+        shouldTrack = true;
+        return res;
+    }
 })
 
 // 注册副作用函数的函数
@@ -50,8 +62,8 @@ const bucket = new WeakMap(); //当代理的对象不要时，该对象不会再
 
 // 追踪函数
 function track(target, key) {
-    if (!affectFunction) {
-        return target[key];
+    if (!affectFunction || !shouldTrack) {
+        return;
     }
     let keyMap = bucket.get(target);
     if (!keyMap) {

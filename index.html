@@ -116,17 +116,17 @@
         // });
         // arr[1] = 'bar';
         // arr.length = 0
-        const obj = {};
-        let arr = reactive([obj]);
-        console.log(arr.includes(obj));
+        // const obj = {};
+        // let arr = reactive([obj]);
+        // console.log(arr.includes(obj));
 
-        // const arr = reactive([]);
-        // effect(() => {
-        //     arr.push(1);
-        // });
-        // effect(() => {
-        //     arr.push(2);
-        // });
+        const arr = reactive([]);
+        effect(() => {
+            arr.push(1);
+        });
+        effect(() => {
+            arr.push(2);
+        });
     </script>
 </body>
 
