@@ -4,6 +4,21 @@ let affectFunction = null;
 let effectStact = [];
 
 
+// 重写数组方法
+const arrayMethods = {};
+// 重写数组方法
+['includes', 'indexOf', 'lastIndexOf'].forEach(method => {
+    const originMethod = Array.prototype[method];
+    arrayMethods[method] = function(...args) {
+        let res = originMethod.apply(this, args);
+        if (res === false || res === -1) {
+            res = originMethod.apply(this.raw, args);
+        }
+        return res;
+    }
+
+})
+
 // 注册副作用函数的函数
 function effect(fn, option = {}) {
     function effectFn() {
@@ -195,8 +210,12 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
             if (key === 'raw') {
                 return target;
             }
-            if (!isReadonly) {
+            if (!isReadonly || typeof key !== 'symbol') {
                 track(target, key);
+            }
+
+            if (Array.isArray(target) && arrayMethods.hasOwnProperty(key)) {
+                return Reflect.get(arrayMethods, key, receiver);
             }
 
             const res = Reflect.get(target, key, receiver);
@@ -238,7 +257,7 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
         },
         // 拦截for...in操作
         ownKeys(target) {
-            track(target, ITERATE_KEY)
+            track(target, Array.isArray(target) ? 'length' : ITERATE_KEY)
             return Reflect.ownKeys(target)
         },
         // 拦截删除属性操作
@@ -260,9 +279,21 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
     })
 }
 
+
+
+
+
+const reactiveMap = new Map();
 // 响应函数
 function reactive(obj) {
-    return createReactive(obj);
+    const existReactive = reactiveMap.get(obj);
+    if (existReactive) {
+        return existReactive;
+    }
+    const proxy = createReactive(obj);
+    reactiveMap.set(obj, proxy);
+    return proxy;
+    // return createReactive(obj);
 }
 
 function shallowReactive(obj) {
