@@ -31,6 +31,29 @@ const arrayMethods = {};
     }
 })
 
+const mutableInstrumentations = {
+    add(key) {
+        // this仍然指向代理对象
+        const target = this.raw;
+        const hasKey = target.has(key);
+        const res = target.add(key);
+        if (!hasKey) {
+            trigger(target, ITERATE_KEY, 'ADD');
+        }
+        return res;
+    },
+    delete(key) {
+        // this仍然指向代理对象
+        const target = this.raw;
+        const hasKey = target.has(key);
+        const res = target.delete(key);
+        if (hasKey) {
+            trigger(target, ITERATE_KEY, 'DELETE');
+        }
+        return res;
+    }
+}
+
 // 注册副作用函数的函数
 function effect(fn, option = {}) {
     function effectFn() {
@@ -221,6 +244,19 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
             // 代理对象可以通过raw属性返回被代理的对象
             if (key === 'raw') {
                 return target;
+            }
+
+            if (key === 'size') {
+                track(target, ITERATE_KEY)
+                return Reflect.get(target, key, target);
+            }
+            // 与用Reflect绑定this值有什么区别
+            if (key === 'delete') {
+                // return target[key].bind(target);
+                return mutableInstrumentations.delete;
+            }
+            if (key === 'add') {
+                return mutableInstrumentations[key];
             }
             if (!isReadonly || typeof key !== 'symbol') {
                 track(target, key);
