@@ -32,12 +32,14 @@ const arrayMethods = {};
 })
 
 const mutableInstrumentations = {
-    add(key) {
+    add(value) {
         // this仍然指向代理对象
         const target = this.raw;
-        const hasKey = target.has(key);
-        const res = target.add(key);
-        if (!hasKey) {
+        // 避免污染原始数据（原始数据包含响应式数据）
+        const rawValue = value.raw || value;
+        const hasValue = target.has(rawValue);
+        const res = target.add(rawValue);
+        if (!hasValue) {
             trigger(target, ITERATE_KEY, 'ADD');
         }
         return res;
@@ -49,6 +51,32 @@ const mutableInstrumentations = {
         const res = target.delete(key);
         if (hasKey) {
             trigger(target, ITERATE_KEY, 'DELETE');
+        }
+        return res;
+    },
+    get(key) {
+        // this仍然指向代理对象
+        const target = this.raw;
+        const hasKey = target.has(key);
+        track(target, key);
+        if (hasKey) {
+            const res = target.get(key);
+            return typeof res === 'Object' ? reactive(res) : res;
+        }
+    },
+
+    set(key, value) {
+        // this仍然指向代理对象
+        const target = this.raw;
+        const hasKey = target.has(key);
+        const oldValue = target.get(key);
+        // 避免污染原始数据（原始数据包含响应式数据）
+        const rawValue = value.raw || value;
+        const res = target.set(key, rawValue);
+        if (!hasKey) {
+            trigger(target, key, 'ADD');
+        } else if (oldValue !== value && (oldValue === oldValue && value === value)) {
+            trigger(target, key, 'SET')
         }
         return res;
     }
@@ -245,19 +273,25 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
             if (key === 'raw') {
                 return target;
             }
-
             if (key === 'size') {
                 track(target, ITERATE_KEY)
                 return Reflect.get(target, key, target);
             }
             // 与用Reflect绑定this值有什么区别
-            if (key === 'delete') {
+            if (key === 'delete' || key === 'add' || key === 'get' || key === 'set') {
                 // return target[key].bind(target);
-                return mutableInstrumentations.delete;
-            }
-            if (key === 'add') {
                 return mutableInstrumentations[key];
             }
+            // if (key === 'add') {
+            //     return mutableInstrumentations[key];
+            // }
+            // if (key === 'get') {
+            //     return mutableInstrumentations[key];
+            // }
+            // if (key === 'set') {
+            //     return mutableInstrumentations[key];
+            // }
+
             if (!isReadonly || typeof key !== 'symbol') {
                 track(target, key);
             }

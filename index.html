@@ -127,6 +127,15 @@
         // effect(() => {
         //     arr.push(2);
         // });
+        // const s = new Set();
+        // const p1 = reactive(s);
+        // const p2 = reactive(new Set());
+        // p1.add(p2);
+        // effect(() => {
+        //     console.log(p1.size);
+        // })
+        // p1.get(p2).add(2)
+
 
         // const s = new Set([1, 2, 3]);
         // const p = reactive(s);
@@ -136,7 +145,24 @@
         effect(() => {
             console.log(p.size);
         })
-        p.delete(2)
+        p.add(4)
+
+        // const p = reactive(new Map([
+        //     ['key', NaN]
+        // ]))
+        // effect(() => {
+        //     console.log(p.get('key'));
+        // });
+        // p.set('key', NaN)
+
+        // const m = new Map();
+        // const p1 = reactive(m);
+        // const p2 = reactive(new Map());
+        // p1.set('p2', p2);
+        // effect(() => {
+        //     console.log(m.get('p2').size);
+        // });
+        // m.get('p2').set('foo', 1)
     </script>
 </body>
 
