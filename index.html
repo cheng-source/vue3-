@@ -141,11 +141,11 @@
         // const p = reactive(s);
         // console.log(p.delete(1));
 
-        const p = reactive(new Set([1, 2, 3]));
-        effect(() => {
-            console.log(p.size);
-        })
-        p.add(4)
+        // const p = reactive(new Set([1, 2, 3]));
+        // effect(() => {
+        //     console.log(p.size);
+        // })
+        // p.add(4)
 
         // const p = reactive(new Map([
         //     ['key', NaN]
@@ -163,6 +163,101 @@
         //     console.log(m.get('p2').size);
         // });
         // m.get('p2').set('foo', 1)
+
+        // const p = reactive(new Map([
+        //     [{
+        //         key: 1
+        //     }, {
+        //         value: 1
+        //     }]
+        // ]))
+        // effect(() => {
+        //     p.forEach(function(value, key) {
+        //         console.log(value);
+        //         console.log(key);
+        //     })
+        // })
+        // p.set({
+        //     key: 2
+        // }, {
+        //     value: 2
+        // })
+
+        // const key = {
+        //     key: 1
+        // }
+        // const value = new Set([1, 2, 3])
+        // const p = reactive(new Map([
+        //     [key, value]
+        // ]))
+
+        // effect(() => {
+        //     p.forEach(function(value, key) {
+        //         console.log(value.size)
+        //     })
+        // })
+
+        // p.get(key).delete(1)
+
+        // const p = reactive(new Map([
+        //     ['key', 1]
+        // ]))
+
+        // effect(() => {
+        //     p.forEach(function(value, key) {
+        //         // forEach 循环不仅关心集合的键，还关心集合的值
+        //         console.log(value) // 1
+        //     })
+        // })
+        // p.set('key', 2) // 即使操作类型是 SET，也应该触发响应
+
+        // let s = [1, 2];
+        // p = reactive(s);
+        // for (const a of p) {
+        //     console.log(a);
+        // }
+
+        // let map = new Map([
+        //     ['key1', 1],
+        //     ['key2', 2]
+        // ]);
+        // let p = reactive(map);
+        // effect(() => {
+        //     for (let key of p.keys()) {
+        //         console.log(key);
+        //     }
+        // })
+
+        // p.set('key2', 'value3')
+        // p.set('key4', 'value4')
+
+        // const refVal = ref(1);
+        // effect(() => {
+        //     console.log(refVal.value);
+        // });
+        // refVal.value = 2;
+
+        // const obj = reactive({
+        //     foo: 1,
+        //     bar: 2
+        // });
+        // const newObj = proxyRefs({
+        //     ...toRefs(obj)
+        // })
+
+
+
+
+        // effect(() => {
+        //     console.log(newObj.foo);
+        // })
+        // newObj.foo = 2;
+
+        const count = ref(0);
+        const obj = reactive({
+            count
+        });
+        console.log(obj.count);
     </script>
 </body>
 

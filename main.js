@@ -61,7 +61,7 @@ const mutableInstrumentations = {
         track(target, key);
         if (hasKey) {
             const res = target.get(key);
-            return typeof res === 'Object' ? reactive(res) : res;
+            return typeof res === 'object' ? reactive(res) : res;
         }
     },
 
@@ -79,6 +79,98 @@ const mutableInstrumentations = {
             trigger(target, key, 'SET')
         }
         return res;
+    },
+    // thisArg指定callback执行时this的值
+    forEach(callback, thisArg) {
+        // wrap 函数用来把可代理的值转换为响应式数据
+        const wrap = (val) => typeof val === 'object' ? reactive(val) : val;
+        // 取的原始对象
+        const target = this.raw;
+        track(target, ITERATE_KEY);
+        // 通过原始数据对象调用 forEach 方法，并把 callback 传递过去
+        target.forEach((v, k) => {
+            // this是代理对象
+            callback.call(thisArg, wrap(v), wrap(k), this);
+        });
+    },
+    [Symbol.iterator]: iterationMethod,
+    entries: iterationMethod,
+    values: valuesIterationMethod,
+    keys: keysIterationMethod
+}
+
+function iterationMethod() {
+    // 取的原始对象
+    const target = this.raw;
+    // 获取原生的
+    const itr = target[Symbol.iterator]();
+    // wrap 函数用来把可代理的值转换为响应式数据
+    const wrap = (val) => typeof val === 'object' && val !== null ? reactive(val) : val;
+    track(target, ITERATE_KEY);
+    // 返回自定义的迭代器
+    return {
+        // 迭代器协议
+        next() {
+            const { value, done } = itr.next();
+            return {
+                value: value ? [wrap(value[0]), wrap(value[1])] : value,
+                done
+            }
+        },
+        // 实现可迭代协议
+        [Symbol.iterator]() {
+            return this;
+        }
+    }
+}
+
+function valuesIterationMethod() {
+    // 取的原始对象
+    const target = this.raw;
+    // 获取原生的迭代器
+    const itr = target.values();
+    // wrap 函数用来把可代理的值转换为响应式数据
+    const wrap = (val) => typeof val === 'object' && val !== null ? reactive(val) : val;
+    track(target, ITERATE_KEY);
+    // 返回自定义的迭代器
+    return {
+        // 迭代器协议
+        next() {
+            const { value, done } = itr.next();
+            return {
+                value: wrap(value),
+                done
+            }
+        },
+        // 实现可迭代协议
+        [Symbol.iterator]() {
+            return this;
+        }
+    }
+}
+
+function keysIterationMethod() {
+    // 取的原始对象
+    const target = this.raw;
+    // 获取原生的迭代器
+    const itr = target.keys();
+    // wrap 函数用来把可代理的值转换为响应式数据
+    const wrap = (val) => typeof val === 'object' && val !== null ? reactive(val) : val;
+    track(target, MAP_KEY_ITERATE_KEY);
+    // 返回自定义的迭代器
+    return {
+        // 迭代器协议
+        next() {
+            const { value, done } = itr.next();
+            return {
+                value: wrap(value),
+                done
+            }
+        },
+        // 实现可迭代协议
+        [Symbol.iterator]() {
+            return this;
+        }
     }
 }
 
@@ -130,6 +222,7 @@ function track(target, key) {
 
 
 const ITERATE_KEY = Symbol();
+const MAP_KEY_ITERATE_KEY = Symbol();
 // 触发函数
 // type：判断操作是属于修改属性值还是增加属性、删除属性等
 function trigger(target, key, type, newVal) {
@@ -166,8 +259,8 @@ function trigger(target, key, type, newVal) {
             }
         })
     }
-
-    if (type === 'ADD' || type === 'DELETE') {
+    // 如果操作类型是 SET，并且目标对象是 Map 类型的数据，也应该触发那些与 ITERATE_KEY 相关联的副作用函数重新执行(Map.forEach也和value有关)
+    if (type === 'ADD' || type === 'DELETE' || (type === 'SET' && Object.prototype.toString.call(target) === '[object Map]')) {
         const iterateSet = keyMap.get(ITERATE_KEY);
         iterateSet && iterateSet.forEach(effectFn => {
             if (effectFn !== affectFunction) {
@@ -175,6 +268,18 @@ function trigger(target, key, type, newVal) {
             }
         })
     }
+
+    // 如果操作类型是 SET，并且目标对象是 Map 类型的数据，也应该触发那些与 ITERATE_KEY 相关联的副作用函数重新执行(Map.forEach也和value有关)
+    if ((type === 'ADD' || type === 'DELETE') && Object.prototype.toString.call(target) === '[object Map]') {
+        const iterateSet = keyMap.get(MAP_KEY_ITERATE_KEY);
+        iterateSet && iterateSet.forEach(effectFn => {
+            if (effectFn !== affectFunction) {
+                effectToRun.add(effectFn);
+            }
+        })
+    }
+
+
 
 
     effectToRun.forEach(effectFn => {
@@ -269,28 +374,17 @@ function traverse(source, seen = new Set()) {
 function createReactive(obj, isShallow = false, isReadonly = false) {
     return new Proxy(obj, {
         get(target, key, receiver) {
-            // 代理对象可以通过raw属性返回被代理的对象
+            // 代理对象可以通过raw属性返回被代理的对象]
             if (key === 'raw') {
                 return target;
             }
-            if (key === 'size') {
-                track(target, ITERATE_KEY)
-                return Reflect.get(target, key, target);
-            }
-            // 与用Reflect绑定this值有什么区别
-            if (key === 'delete' || key === 'add' || key === 'get' || key === 'set') {
-                // return target[key].bind(target);
+            if (Object.prototype.toString.call(target) === '[object Map]' || Object.prototype.toString.call(target) === '[object Set]') {
+                if (key === 'size') {
+                    track(target, ITERATE_KEY)
+                    return Reflect.get(target, key, target);
+                }
                 return mutableInstrumentations[key];
             }
-            // if (key === 'add') {
-            //     return mutableInstrumentations[key];
-            // }
-            // if (key === 'get') {
-            //     return mutableInstrumentations[key];
-            // }
-            // if (key === 'set') {
-            //     return mutableInstrumentations[key];
-            // }
 
             if (!isReadonly || typeof key !== 'symbol') {
                 track(target, key);
@@ -329,7 +423,6 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
                     trigger(target, key, type, newValue);
                 }
             }
-
             return res
         },
         // 拦截in操作符
@@ -388,4 +481,56 @@ function readonly(obj) {
 
 function shallowReadonly(obj) {
     return createReactive(obj, true, true)
+}
+
+function ref(val) {
+    const wrapper = {
+            value: val
+        }
+        // 定义这个属性用作区别一个数据是否是ref
+    Object.defineProperty(wrapper, '__v_isRef', {
+        value: true
+    })
+    return reactive(wrapper);
+}
+
+function toRef(obj, key) {
+    const wrapper = {
+        get value() {
+            return obj[key];
+        },
+        // 允许设置值
+        set value(val) {
+            obj[key] = val
+        }
+    }
+    Object.defineProperty(wrapper, '__v_isRef', {
+        value: true
+    })
+    return wrapper;
+}
+
+function toRefs(obj) {
+    const ret = {};
+    for (const key in obj) {
+        ret[key] = toRef(obj, key);
+    }
+    return ret;
+}
+// 使用代理实现自动脱ref
+function proxyRefs(target) {
+    return new Proxy(target, {
+        get(target, key, receiver) {
+            const value = Reflect.get(target, key, receiver);
+            return value.__v_isRef ? value.value : value;
+        },
+        set(target, key, newValue, receiver) {
+            const value = target[key];
+            if (value.__v_isRef) {
+                value.value = newValue;
+                return true;
+            }
+            return Reflect.set(target, key, newValue, receiver);
+        }
+    })
 }
